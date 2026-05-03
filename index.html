@@ -277,25 +277,31 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
       <div id="cot-bars"><div class="loading">NAČÍTÁM COT...</div></div>
       <div style="margin-top:12px;border-top:1px solid #0d1528;padding-top:12px;">
         <div class="ptitle">MANUÁLNÍ ZADÁNÍ COT</div>
-        <div style="color:#2a3a55;font-size:9px;margin-bottom:10px;">Každý pátek po 15:30 ET z <a href="https://publicreporting.cftc.gov" target="_blank" style="color:#4d9fff;">CFTC.gov</a> — S&amp;P 500 Non-Commercial</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <div style="color:#2a3a55;font-size:9px;margin-bottom:10px;">Každý pátek po 15:30 ET — zadej raw čísla z CFTC, % se spočítá samo</div>
+        <a href="https://www.cftc.gov/dea/futures/financial_lf.htm" target="_blank" style="display:block;background:#0a1020;border:1px solid #4d9fff33;border-radius:4px;padding:7px 10px;color:#4d9fff;font-size:9px;letter-spacing:2px;text-decoration:none;margin-bottom:10px;text-align:center;">📊 OTEVŘÍT CFTC REPORT →</a>
+        <div style="font-size:9px;color:#3a5070;margin-bottom:8px;">Najdi řádek "S&P 500 STOCK INDEX" — zkopíruj čísla z Long/Short sloupců:</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+          <div style="font-size:9px;color:#00ff8888;text-align:center;padding:4px;background:#00ff8808;border-radius:3px;">LEV. FUNDS</div>
+          <div style="font-size:9px;color:#00ff8888;text-align:center;padding:4px;background:#00ff8808;border-radius:3px;">ASSET MGR</div>
           <div>
-            <div style="font-size:9px;color:#5a7090;margin-bottom:3px;">Lev Funds LONG %</div>
-            <input class="gex-inp" type="number" min="0" max="100" placeholder="0-100" id="cot-manual-lev" />
+            <div style="font-size:8px;color:#5a7090;margin-bottom:2px;">LONG</div>
+            <input class="gex-inp" type="number" placeholder="napr. 85420" id="cot-lev-long" oninput="calcCOTPct()" />
           </div>
           <div>
-            <div style="font-size:9px;color:#5a7090;margin-bottom:3px;">Asset Mgr LONG %</div>
-            <input class="gex-inp" type="number" min="0" max="100" placeholder="0-100" id="cot-manual-asset" />
+            <div style="font-size:8px;color:#5a7090;margin-bottom:2px;">LONG</div>
+            <input class="gex-inp" type="number" placeholder="napr. 520000" id="cot-asset-long" oninput="calcCOTPct()" />
           </div>
           <div>
-            <div style="font-size:9px;color:#5a7090;margin-bottom:3px;">Small Spec LONG %</div>
-            <input class="gex-inp" type="number" min="0" max="100" placeholder="0-100" id="cot-manual-small" />
+            <div style="font-size:8px;color:#5a7090;margin-bottom:2px;">SHORT</div>
+            <input class="gex-inp" type="number" placeholder="napr. 42300" id="cot-lev-short" oninput="calcCOTPct()" />
           </div>
           <div>
-            <div style="font-size:9px;color:#5a7090;margin-bottom:3px;">Report datum</div>
-            <input class="gex-inp" type="date" id="cot-manual-date" />
+            <div style="font-size:8px;color:#5a7090;margin-bottom:2px;">SHORT</div>
+            <input class="gex-inp" type="number" placeholder="napr. 180000" id="cot-asset-short" oninput="calcCOTPct()" />
           </div>
         </div>
+        <div id="cot-calc-result" style="background:#0a1020;border-radius:4px;padding:8px;margin-bottom:8px;font-size:9px;color:#3a5070;text-align:center;">Zadej čísla → uvidíš výsledek</div>
+        <input class="gex-inp" type="date" id="cot-manual-date" style="margin-bottom:8px;" />
         <button class="btn btn-blue" style="width:100%;margin-top:4px;" onclick="saveCOTManual()">ULOŽIT COT DATA</button>
       </div>
     </div>
@@ -842,13 +848,34 @@ function renderStatus(){
 }
 
 // ─── MANUAL COT ──────────────────────────────────────────────────────────────
+function calcCOTPct(){
+  const ll = parseFloat(document.getElementById('cot-lev-long').value)||0;
+  const ls = parseFloat(document.getElementById('cot-lev-short').value)||0;
+  const al = parseFloat(document.getElementById('cot-asset-long').value)||0;
+  const as_ = parseFloat(document.getElementById('cot-asset-short').value)||0;
+  const levPct  = (ll+ls)>0 ? Math.round(ll/(ll+ls)*100) : null;
+  const assetPct = (al+as_)>0 ? Math.round(al/(al+as_)*100) : null;
+  const el = document.getElementById('cot-calc-result');
+  if(levPct!==null && assetPct!==null){
+    const levColor = levPct>60?'#00ff88':levPct>40?'#ffcc00':'#ff3366';
+    const assetColor = assetPct>60?'#00ff88':assetPct>40?'#ffcc00':'#ff3366';
+    el.innerHTML = `Lev Funds: <span style="color:${levColor};font-weight:700;">${levPct}%</span> long &nbsp;|&nbsp; Asset Mgr: <span style="color:${assetColor};font-weight:700;">${assetPct}%</span> long`;
+  } else {
+    el.textContent = 'Zadej čísla → uvidíš výsledek';
+  }
+}
+
 function saveCOTManual(){
-  const lev   = parseFloat(document.getElementById('cot-manual-lev').value);
-  const asset = parseFloat(document.getElementById('cot-manual-asset').value);
-  const small = parseFloat(document.getElementById('cot-manual-small').value);
-  const date  = document.getElementById('cot-manual-date').value;
-  if(isNaN(lev)||isNaN(asset)||isNaN(small)){ alert('Vyplň všechna pole 0-100'); return; }
-  const cotData = { date: date||'manual', levFunds:Math.round(lev), assetMgr:Math.round(asset), smallSpec:Math.round(small), levNet:0, assetNet:0, manual:true };
+  const ll = parseFloat(document.getElementById('cot-lev-long').value)||0;
+  const ls = parseFloat(document.getElementById('cot-lev-short').value)||0;
+  const al = parseFloat(document.getElementById('cot-asset-long').value)||0;
+  const as_ = parseFloat(document.getElementById('cot-asset-short').value)||0;
+  const date = document.getElementById('cot-manual-date').value;
+  const lev   = (ll+ls)>0 ? Math.round(ll/(ll+ls)*100) : null;
+  const asset = (al+as_)>0 ? Math.round(al/(al+as_)*100) : null;
+  const small = 50; // default neutral
+  if(lev===null||asset===null){ alert('Vyplň alespoň Lev Funds a Asset Mgr long+short'); return; }
+  const cotData = { date: date||'manual', levFunds:lev, assetMgr:asset, smallSpec:small, levNet:ll-ls, assetNet:al-as_, manual:true };
   localStorage.setItem('cot_manual', JSON.stringify(cotData));
   state.cot = cotData;
   state.ci = cotData.levFunds;
@@ -868,13 +895,14 @@ function loadSavedCOT(){
 
 function populateCOTForm(cot){
   if(!cot) return;
-  const l = document.getElementById('cot-manual-lev');
-  const a = document.getElementById('cot-manual-asset');
-  const s = document.getElementById('cot-manual-small');
+  // Show saved % in result box
+  const el = document.getElementById('cot-calc-result');
+  if(el && cot.levFunds){
+    const levColor = cot.levFunds>60?'#00ff88':cot.levFunds>40?'#ffcc00':'#ff3366';
+    const assetColor = cot.assetMgr>60?'#00ff88':cot.assetMgr>40?'#ffcc00':'#ff3366';
+    el.innerHTML = `Uloženo: Lev Funds <span style="color:${levColor};font-weight:700;">${cot.levFunds}%</span> | Asset Mgr <span style="color:${assetColor};font-weight:700;">${cot.assetMgr}%</span> · ${cot.date}`;
+  }
   const d = document.getElementById('cot-manual-date');
-  if(l) l.value = cot.levFunds;
-  if(a) a.value = cot.assetMgr;
-  if(s) s.value = cot.smallSpec;
   if(d && cot.date !== 'manual') d.value = cot.date;
 }
 
