@@ -275,6 +275,29 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
       <div class="ptitle">COT DATA · CFTC TFF REPORT</div>
       <div style="color:#2a3a55;font-size:9px;margin-bottom:12px;" id="cot-date-label">--</div>
       <div id="cot-bars"><div class="loading">NAČÍTÁM COT...</div></div>
+      <div style="margin-top:12px;border-top:1px solid #0d1528;padding-top:12px;">
+        <div class="ptitle">MANUÁLNÍ ZADÁNÍ COT</div>
+        <div style="color:#2a3a55;font-size:9px;margin-bottom:10px;">Každý pátek po 15:30 ET z <a href="https://publicreporting.cftc.gov" target="_blank" style="color:#4d9fff;">CFTC.gov</a> — S&amp;P 500 Non-Commercial</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+          <div>
+            <div style="font-size:9px;color:#5a7090;margin-bottom:3px;">Lev Funds LONG %</div>
+            <input class="gex-inp" type="number" min="0" max="100" placeholder="0-100" id="cot-manual-lev" />
+          </div>
+          <div>
+            <div style="font-size:9px;color:#5a7090;margin-bottom:3px;">Asset Mgr LONG %</div>
+            <input class="gex-inp" type="number" min="0" max="100" placeholder="0-100" id="cot-manual-asset" />
+          </div>
+          <div>
+            <div style="font-size:9px;color:#5a7090;margin-bottom:3px;">Small Spec LONG %</div>
+            <input class="gex-inp" type="number" min="0" max="100" placeholder="0-100" id="cot-manual-small" />
+          </div>
+          <div>
+            <div style="font-size:9px;color:#5a7090;margin-bottom:3px;">Report datum</div>
+            <input class="gex-inp" type="date" id="cot-manual-date" />
+          </div>
+        </div>
+        <button class="btn btn-blue" style="width:100%;margin-top:4px;" onclick="saveCOTManual()">ULOŽIT COT DATA</button>
+      </div>
     </div>
 
     <!-- Right column -->
@@ -464,11 +487,17 @@ async function loadData(){
   try{
     const [fred, cot] = await Promise.all([fetchFRED(key), fetchCOT()]);
     state.fred = fred;
-    state.cot = cot;
-    state.ci = cot?.levFunds ?? null;
-    if(fred && state.ci!==null){
-      state.comp = calcScore(fred.vix, fred.ys, fred.dxy, fred.hy, state.ci);
-      state.ms = calcMS(fred.vix, fred.ys, fred.dxy, fred.hy, state.ci);
+    // Use API COT if available, else keep saved manual COT
+    if(cot){ state.cot = cot; state.ci = cot.levFunds; }
+    else {
+      const saved = loadSavedCOT();
+      if(saved){ state.cot = saved; state.ci = saved.levFunds; setTimeout(()=>populateCOTForm(saved),200); }
+      else { state.cot = null; state.ci = null; }
+    }
+    if(fred){
+      const cotForCalc = state.ci ?? 50;
+      state.comp = calcScore(fred.vix, fred.ys, fred.dxy, fred.hy, cotForCalc);
+      state.ms = calcMS(fred.vix, fred.ys, fred.dxy, fred.hy, cotForCalc);
       state.regime = regimeDetect(fred.vix, fred.ys, fred.dxy, fred.hy);
     }
     document.getElementById('ts').textContent = new Date().toLocaleTimeString('cs-CZ',{hour:'2-digit',minute:'2-digit'});
@@ -551,9 +580,10 @@ function renderConfluence(){
 function buildChecks(){
   const { fred, comp, ci } = state;
   if(!fred || comp===null) return [];
+  const ciVal = ci ?? 50;
   return [
     { label:'Macro Score aligned', ok: comp>55||comp<45, note:`Score ${comp}/100 — bias confirmed` },
-    { label:'COT not at extreme — no fade', ok: ci!==null&&ci<80&&ci>20, note:`Lev Funds index ${ci}/100` },
+    { label:'COT not at extreme — no fade', ok: ciVal<80&&ciVal>20, note: ci!==null ? `Lev Funds index ${ci}/100` : 'COT nedostupný — používám neutrál 50' },
     { label:'VIX regime acceptable', ok: fred.vix<25, note:`VIX ${fred.vix?.toFixed(1)} — not crisis mode` },
     { label:'Yield curve not inverted', ok: fred.ys>-0.3, note:`10Y-2Y spread ${fred.ys?.toFixed(2)}%` },
   ];
@@ -811,6 +841,43 @@ function renderStatus(){
     </div>`).join('');
 }
 
+// ─── MANUAL COT ──────────────────────────────────────────────────────────────
+function saveCOTManual(){
+  const lev   = parseFloat(document.getElementById('cot-manual-lev').value);
+  const asset = parseFloat(document.getElementById('cot-manual-asset').value);
+  const small = parseFloat(document.getElementById('cot-manual-small').value);
+  const date  = document.getElementById('cot-manual-date').value;
+  if(isNaN(lev)||isNaN(asset)||isNaN(small)){ alert('Vyplň všechna pole 0-100'); return; }
+  const cotData = { date: date||'manual', levFunds:Math.round(lev), assetMgr:Math.round(asset), smallSpec:Math.round(small), levNet:0, assetNet:0, manual:true };
+  localStorage.setItem('cot_manual', JSON.stringify(cotData));
+  state.cot = cotData;
+  state.ci = cotData.levFunds;
+  if(state.fred){
+    state.comp = calcScore(state.fred.vix, state.fred.ys, state.fred.dxy, state.fred.hy, state.ci);
+    state.ms = calcMS(state.fred.vix, state.fred.ys, state.fred.dxy, state.fred.hy, state.ci);
+  }
+  render();
+  alert('COT data uložena! Bias Score aktualizován.');
+}
+
+function loadSavedCOT(){
+  const saved = localStorage.getItem('cot_manual');
+  if(!saved) return null;
+  try{ return JSON.parse(saved); }catch(e){ return null; }
+}
+
+function populateCOTForm(cot){
+  if(!cot) return;
+  const l = document.getElementById('cot-manual-lev');
+  const a = document.getElementById('cot-manual-asset');
+  const s = document.getElementById('cot-manual-small');
+  const d = document.getElementById('cot-manual-date');
+  if(l) l.value = cot.levFunds;
+  if(a) a.value = cot.assetMgr;
+  if(s) s.value = cot.smallSpec;
+  if(d && cot.date !== 'manual') d.value = cot.date;
+}
+
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
 function saveKey(){
   const k = document.getElementById('key-input').value.trim();
@@ -843,6 +910,13 @@ document.getElementById('key-input').addEventListener('keydown', e => e.key==='E
 
 if(localStorage.getItem('fred_key')){
   showApp();
+  // Pre-load saved COT
+  const savedCOT = loadSavedCOT();
+  if(savedCOT){
+    state.cot = savedCOT;
+    state.ci = savedCOT.levFunds;
+    setTimeout(() => populateCOTForm(savedCOT), 500);
+  }
   loadData();
   refreshTimer = setInterval(loadData, 5*60*1000);
 }
