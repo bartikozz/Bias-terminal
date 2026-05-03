@@ -1,0 +1,828 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BIAS///TERMINAL</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #050810;
+  --bg2: #07091a;
+  --bg3: #0a1020;
+  --bg4: #0d1528;
+  --border: #131d35;
+  --border2: #1a2540;
+  --text: #c8d4e8;
+  --muted: #7a8fa8;
+  --dim: #3a5070;
+  --vdim: #1a2540;
+  --green: #00ff88;
+  --yellow: #ffcc00;
+  --orange: #ff6600;
+  --red: #ff3366;
+  --blue: #4d9fff;
+  --font: 'IBM Plex Mono', monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:12px;min-height:100vh;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+input::placeholder{color:#2a3a55;}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes glow{0%,100%{box-shadow:0 0 8px var(--green)}50%{box-shadow:0 0 20px var(--green),0 0 40px var(--green)44}}
+
+/* SETUP */
+#setup{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
+.setup-box{max-width:460px;width:100%;animation:fadeIn .5s ease;}
+.setup-logo{text-align:center;margin-bottom:36px;}
+.setup-logo .logo{font-size:22px;font-weight:700;letter-spacing:6px;color:var(--blue);}
+.setup-logo .sub{font-size:9px;letter-spacing:4px;color:var(--dim);margin-top:6px;}
+.setup-card{background:var(--bg2);border:1px solid var(--border);padding:28px;border-radius:6px;}
+.setup-label{font-size:9px;letter-spacing:3px;color:var(--dim);margin-bottom:10px;}
+.setup-input{background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:9px 12px;color:var(--text);font-family:var(--font);font-size:11px;width:100%;outline:none;transition:border-color .2s;}
+.setup-input:focus{border-color:var(--blue);}
+.setup-hint{color:#2a3a55;font-size:9px;margin-top:8px;margin-bottom:20px;line-height:1.6;}
+.setup-hint a{color:var(--blue);text-decoration:none;}
+.btn{background:transparent;border-radius:4px;padding:8px 16px;font-family:var(--font);font-size:10px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;transition:all .2s;}
+.btn-blue{border:1px solid var(--blue);color:var(--blue);}
+.btn-blue:hover{background:var(--blue)22;}
+.btn-dim{border:1px solid var(--dim);color:var(--dim);padding:5px 10px;}
+.btn-dim:hover{background:var(--dim)22;}
+.setup-footer{text-align:center;margin-top:16px;color:var(--vdim);font-size:9px;letter-spacing:2px;}
+
+/* HEADER */
+#header{display:flex;align-items:center;justify-content:space-between;padding:11px 18px;border-bottom:1px solid var(--border2);background:var(--bg2);position:sticky;top:0;z-index:100;}
+.logo{color:var(--blue);font-size:15px;font-weight:700;letter-spacing:4px;}
+.header-right{display:flex;gap:8px;align-items:center;}
+.live-badge{display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:9px;color:var(--muted);letter-spacing:2px;}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite;}
+.ts{color:var(--vdim);font-size:9px;letter-spacing:1px;}
+
+/* ERROR BAR */
+#errbar{background:#1a0a10;border-bottom:1px solid #ff336633;padding:7px 18px;font-size:10px;color:#ff6680;display:none;}
+
+/* MAIN GRID */
+#app{display:none;padding:2px;max-width:1600px;margin:0 auto;}
+.row{display:grid;gap:2px;margin-bottom:2px;}
+.row1{grid-template-columns:1fr 1fr 1fr 1fr;}
+.row2{grid-template-columns:1.4fr 1fr 300px;}
+.row3{grid-template-columns:1fr 1fr 1fr;}
+.col-stack{display:flex;flex-direction:column;gap:2px;}
+
+.panel{background:var(--bg2);border:1px solid var(--border);padding:14px 16px;animation:fadeIn .4s ease;}
+.ptitle{font-size:9px;letter-spacing:3px;color:var(--dim);margin-bottom:12px;font-weight:700;text-transform:uppercase;border-bottom:1px solid var(--bg4);padding-bottom:8px;}
+
+/* CIRCLES */
+.circle{border-radius:50%;border:3px solid;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;}
+.circle-lg{width:72px;height:72px;}
+.circle-md{width:58px;height:58px;}
+.circle-val{font-weight:700;line-height:1;}
+.circle-sub{font-size:8px;color:var(--dim);letter-spacing:1px;}
+
+/* STAT CARDS */
+.stat-row{display:flex;align-items:center;gap:16px;}
+.stat-label{font-size:14px;font-weight:700;letter-spacing:2px;}
+.stat-sub{font-size:9px;color:var(--dim);margin-top:4px;}
+
+/* REGIME BOX */
+.regime-box{border-radius:4px;padding:10px 14px;margin-bottom:8px;}
+
+/* BARS */
+.bar-row{margin-bottom:10px;}
+.bar-meta{display:flex;justify-content:space-between;margin-bottom:3px;}
+.bar-label{color:var(--muted);font-size:10px;}
+.bar-vals{display:flex;gap:12px;}
+.bar-val{color:#4a6080;font-size:10px;}
+.bar-score{font-size:10px;min-width:36px;text-align:right;}
+.bar-track{height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:2px;transition:width 1.2s ease;}
+
+/* COT BARS */
+.cot-row{padding:8px 0;border-bottom:1px solid var(--bg3);}
+.cot-meta{display:flex;justify-content:space-between;margin-bottom:4px;}
+.cot-right{display:flex;gap:10px;}
+.cot-sig{font-size:9px;letter-spacing:1px;}
+
+/* TABLE ROWS */
+.trow{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--bg3);}
+.trow-k{color:#5a7090;font-size:9px;}
+.trow-v{font-size:9px;font-weight:700;}
+
+/* CHECKLIST */
+.check-item{display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid var(--bg3);}
+.check-box{width:14px;height:14px;border-radius:3px;border:1px solid;display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;}
+.check-text{font-size:10px;}
+.check-note{font-size:9px;color:var(--dim);margin-top:1px;}
+
+/* RECOMMENDATION */
+.reco{margin-top:14px;padding:10px 12px;background:var(--bg3);border-radius:3px;}
+.reco-label{font-size:9px;color:var(--dim);margin-bottom:6px;}
+.reco-text{font-size:10px;font-weight:700;letter-spacing:1px;}
+
+/* GEX */
+.gex-inp{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:6px 10px;color:var(--text);font-family:var(--font);font-size:11px;width:100%;outline:none;transition:border-color .2s;}
+.gex-inp:focus{border-color:var(--blue)44;}
+.gex-context{margin-top:10px;padding:8px 10px;background:var(--bg3);border-radius:3px;}
+
+/* SESSION */
+.sess-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--bg3);}
+
+/* REGIME CHIPS */
+.regime-chips{display:flex;gap:2px;margin-bottom:8px;}
+.chip{flex:1;padding:4px 2px;text-align:center;border-radius:3px;font-size:7px;letter-spacing:0.5px;border:1px solid;}
+
+/* STATUS */
+.status-dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:6px;}
+
+/* LOADING */
+.loading{text-align:center;color:var(--dim);font-size:10px;letter-spacing:3px;padding:16px;}
+
+/* SCATTER */
+#constellation-wrap{position:relative;height:200px;}
+
+/* FOOTER */
+#footer{text-align:center;padding:14px 20px;color:var(--vdim);font-size:9px;letter-spacing:3px;border-top:1px solid var(--bg4);margin-top:2px;}
+
+@media(max-width:1100px){
+  .row1{grid-template-columns:1fr 1fr;}
+  .row2{grid-template-columns:1fr 1fr;}
+  .row2 .col-stack{display:grid;grid-template-columns:1fr 1fr;gap:2px;}
+  .row3{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:700px){
+  .row1,.row2,.row3{grid-template-columns:1fr;}
+  .row2 .col-stack{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="setup">
+  <div class="setup-box">
+    <div class="setup-logo">
+      <div class="logo">BIAS///TERMINAL</div>
+      <div class="sub">ES · NQ · MACRO BIAS ENGINE</div>
+    </div>
+    <div class="setup-card">
+      <div class="setup-label">FRED API KEY</div>
+      <input class="setup-input" id="key-input" type="password" placeholder="Vlož FRED API key..." />
+      <div class="setup-hint">
+        Zdarma na <a href="https://fred.stlouisfed.org" target="_blank">fred.stlouisfed.org</a> → My Account → API Keys.<br/>
+        COT data se načítají automaticky z CFTC (bez klíče).
+      </div>
+      <button class="btn btn-blue" onclick="saveKey()">CONNECT →</button>
+    </div>
+    <div class="setup-footer">COT · FRED · REGIME · SIGNAL CONSTELLATION</div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="header" style="display:none;">
+  <div class="logo">BIAS///TERMINAL</div>
+  <div class="header-right">
+    <div class="live-badge"><div class="live-dot"></div>LIVE · FRED + CFTC</div>
+    <span class="ts" id="ts"></span>
+    <button class="btn btn-dim" id="refresh-btn" onclick="loadData()">↺</button>
+    <button class="btn btn-dim" onclick="resetKey()">⚙</button>
+  </div>
+</div>
+
+<div id="errbar"></div>
+
+<div id="app">
+  <!-- ROW 1 -->
+  <div class="row row1">
+    <!-- Bias Score -->
+    <div class="panel">
+      <div class="ptitle">BIAS SCORE</div>
+      <div class="stat-row">
+        <div class="circle circle-lg" id="circ-bias">
+          <span class="circle-val" style="font-size:26px;" id="bias-val">--</span>
+          <span class="circle-sub">/ 100</span>
+        </div>
+        <div>
+          <div class="stat-label" id="bias-label">--</div>
+          <div class="stat-sub" id="bias-sub">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COT Index -->
+    <div class="panel">
+      <div class="ptitle">COT INDEX · LEV. FUNDS</div>
+      <div class="stat-row">
+        <div class="circle circle-lg" id="circ-cot">
+          <span class="circle-val" style="font-size:26px;" id="cot-val">--</span>
+          <span class="circle-sub">/ 100</span>
+        </div>
+        <div>
+          <div class="stat-label" id="cot-label">--</div>
+          <div class="stat-sub" id="cot-sub">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Macro Regime -->
+    <div class="panel">
+      <div class="ptitle">MACRO REGIME</div>
+      <div class="regime-box" id="regime-box">
+        <div style="font-size:14px;font-weight:700;letter-spacing:3px;" id="regime-name">--</div>
+        <div style="color:var(--dim);font-size:9px;margin-top:5px;" id="regime-vals">--</div>
+      </div>
+      <div style="color:var(--dim);font-size:9px;" id="regime-desc"></div>
+    </div>
+
+    <!-- Confluence -->
+    <div class="panel">
+      <div class="ptitle">NY CONFLUENCE CHECK</div>
+      <div class="stat-row">
+        <div class="circle circle-md" id="circ-conf">
+          <span class="circle-val" style="font-size:20px;" id="conf-val">0</span>
+          <span class="circle-sub" id="conf-denom">/ 4</span>
+        </div>
+        <div>
+          <div class="stat-label" id="conf-label">--</div>
+          <div class="stat-sub">Signals aligned</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 2 -->
+  <div class="row row2">
+    <!-- Signal Constellation -->
+    <div class="panel">
+      <div class="ptitle">SIGNAL CONSTELLATION · Bias × Confidence</div>
+      <div style="display:flex;gap:12px;margin-bottom:8px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:5px;font-size:9px;color:#5a7090;"><div style="width:8px;height:8px;border-radius:50%;background:var(--green);"></div>BULLISH</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:9px;color:#5a7090;"><div style="width:8px;height:8px;border-radius:50%;background:var(--red);"></div>BEARISH</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:9px;color:#5a7090;"><div style="width:8px;height:8px;border-radius:50%;background:var(--blue);"></div>NEUTRAL</div>
+        <span style="font-size:9px;color:var(--dim);margin-left:auto;" id="sig-count">5 active signals</span>
+      </div>
+      <div id="constellation-wrap"><canvas id="scatter-chart"></canvas></div>
+    </div>
+
+    <!-- COT Data -->
+    <div class="panel">
+      <div class="ptitle">COT DATA · CFTC TFF REPORT</div>
+      <div style="color:#2a3a55;font-size:9px;margin-bottom:12px;" id="cot-date-label">--</div>
+      <div id="cot-bars"><div class="loading">NAČÍTÁM COT...</div></div>
+    </div>
+
+    <!-- Right column -->
+    <div class="col-stack">
+      <!-- Regime chips -->
+      <div class="panel">
+        <div class="ptitle">REGIME</div>
+        <div class="regime-chips" id="regime-chips">
+          <div class="chip" id="chip-gold">GOLDI</div>
+          <div class="chip" id="chip-refl">REFLA</div>
+          <div class="chip" id="chip-stag">STAGF</div>
+          <div class="chip" id="chip-defl">DEFLA</div>
+        </div>
+        <div style="font-size:9px;color:var(--dim);" id="regime-desc2"></div>
+      </div>
+
+      <!-- Session Bias -->
+      <div class="panel">
+        <div class="ptitle">SESSION BIAS</div>
+        <div id="session-bias"><div class="loading">--</div></div>
+      </div>
+
+      <!-- Regime Params -->
+      <div class="panel" id="regime-params-panel">
+        <div class="ptitle">REGIME PARAMS</div>
+        <div id="regime-params"></div>
+      </div>
+
+      <!-- Data Status -->
+      <div class="panel">
+        <div class="ptitle">DATA STATUS</div>
+        <div id="data-status"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 3 -->
+  <div class="row row3">
+    <!-- Composite Macro Score -->
+    <div class="panel">
+      <div class="ptitle">COMPOSITE MACRO SCORE</div>
+      <div id="composite-score"><div class="loading">--</div></div>
+    </div>
+
+    <!-- Checklist -->
+    <div class="panel">
+      <div class="ptitle">PRE-TRADE CHECKLIST · NY OPEN</div>
+      <div id="checklist"><div class="loading">ČEKÁM NA DATA</div></div>
+    </div>
+
+    <!-- GEX Levels -->
+    <div class="panel">
+      <div class="ptitle">GEX LEVELS · ES / NQ (MANUÁLNÍ)</div>
+      <div style="color:#2a3a55;font-size:9px;margin-bottom:12px;">GEX není volně dostupný přes API — zadej z FlowAlpha / Squeeze Metrics</div>
+      <div id="gex-fields"></div>
+      <div id="gex-context"></div>
+    </div>
+  </div>
+</div>
+
+<div id="footer" style="display:none;">BIAS///TERMINAL · FRED + CFTC DATA · AUTO-REFRESH 5 MIN · NOT FINANCIAL ADVICE</div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const FRED_BASE = 'https://api.stlouisfed.org/fred/series/observations';
+const FRED_SERIES = { VIX:'VIXCLS', DXY:'DTWEXBGS', Y10:'DGS10', Y2:'DGS2', HY:'BAMLH0A0HYM2' };
+
+const REGIMES = {
+  goldilocks:  { label:'GOLDILOCKS',  color:'#00ff88', desc:'Low inflation, strong growth — optimal conditions', chip:'chip-gold' },
+  reflation:   { label:'REFLATION',   color:'#ffcc00', desc:'Rising inflation, strong growth — cautious bull', chip:'chip-refl' },
+  stagflation: { label:'STAGFLATION', color:'#ff6600', desc:'Rising inflation, weak growth — defensive', chip:'chip-stag' },
+  deflation:   { label:'DEFLATION',   color:'#ff3366', desc:'Low inflation, weak growth — risk-off', chip:'chip-defl' },
+};
+
+let state = { fred:null, cot:null, regime:null, comp:null, ci:null, ms:null };
+let scatterChart = null;
+let gexVals = { cw:'', pw:'', mp:'', gf:'' };
+let refreshTimer = null;
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+function biasColor(s){ return s>=60?'#00ff88':s>=40?'#ffcc00':'#ff3366'; }
+function biasLabel(s){ return s>=70?'BULL':s>=55?'MILD BULL':s>=45?'NEUTRAL':s>=30?'MILD BEAR':'BEAR'; }
+
+function regimeDetect(vix, ys, dxy, hy){
+  const growth = ys > 0;
+  const risk = vix < 22 && hy < 4.5;
+  const inflation = dxy < 104 && hy > 3.5;
+  if(risk && growth && !inflation) return 'goldilocks';
+  if(risk && growth && inflation)  return 'reflation';
+  if(!risk && !growth)             return 'deflation';
+  return 'stagflation';
+}
+
+function calcScore(vix, ys, dxy, hy, cot){
+  const v = vix<15?1:vix<20?.5:vix<25?0:vix<30?-.5:-1;
+  const y = ys>.5?1:ys>0?.5:ys>-.3?0:-1;
+  const d = dxy<100?1:dxy<103?.5:dxy<106?0:-1;
+  const h = hy<3?1:hy<4?.5:hy<5?0:-1;
+  const c = cot>70?1:cot>50?.5:cot>30?0:cot>10?-.5:-1;
+  return Math.round((v*.20+y*.20+d*.15+h*.15+c*.30+1)*50);
+}
+
+function calcMS(vix, ys, dxy, hy, cot){
+  return {
+    vix:  vix<15?1:vix<20?.5:vix<25?0:vix<30?-.5:-1,
+    yc:   ys>.5?1:ys>0?.5:ys>-.3?0:-1,
+    dxy:  dxy<100?1:dxy<103?.5:dxy<106?0:-1,
+    hy:   hy<3?1:hy<4?.5:hy<5?0:-1,
+    cot:  cot>70?1:cot>50?.5:cot>30?0:cot>10?-.5:-1,
+  };
+}
+
+function scoreColor(s){ return s>0.3?'#00ff88':s>-0.3?'#ffcc00':'#ff3366'; }
+
+// ─── API ──────────────────────────────────────────────────────────────────────
+async function fredFetch(series, key){
+  const r = await fetch(`${FRED_BASE}?series_id=${series}&api_key=${key}&file_type=json&sort_order=desc&limit=10`);
+  if(!r.ok) throw new Error(`FRED ${series} error ${r.status}`);
+  const d = await r.json();
+  const obs = d.observations?.find(o=>o.value!='.');
+  return obs ? parseFloat(obs.value) : null;
+}
+
+async function fetchFRED(key){
+  const [vix,dxy,y10,y2,hy] = await Promise.all([
+    fredFetch(FRED_SERIES.VIX,key), fredFetch(FRED_SERIES.DXY,key),
+    fredFetch(FRED_SERIES.Y10,key), fredFetch(FRED_SERIES.Y2,key),
+    fredFetch(FRED_SERIES.HY,key),
+  ]);
+  return { vix, dxy, y10, y2, hy, ys: y10&&y2 ? +(y10-y2).toFixed(3) : null };
+}
+
+async function fetchCOT(){
+  try{
+    const url = "https://publicreporting.cftc.gov/api/odata/v1/CorrectionsAndRestatements?$filter=cftc_contract_market_code eq '13874%2B'&$orderby=report_date_as_yyyy_mm_dd desc&$top=1&$format=json";
+    const r = await fetch(url);
+    if(!r.ok) throw new Error('COT');
+    const d = await r.json();
+    const row = d.value?.[0];
+    if(!row) return null;
+    const ll=parseInt(row.lev_money_positions_long_all)||0, ls=parseInt(row.lev_money_positions_short_all)||0;
+    const al=parseInt(row.asset_mgr_positions_long_all)||0, as_=parseInt(row.asset_mgr_positions_short_all)||0;
+    const sl=parseInt(row.nonrept_positions_long_all)||0, ss=parseInt(row.nonrept_positions_short_all)||0;
+    const lt=ll+ls, at=al+as_, st=sl+ss;
+    return {
+      date: row.report_date_as_yyyy_mm_dd,
+      levFunds: lt ? Math.round(ll/lt*100) : 50,
+      assetMgr: at ? Math.round(al/at*100) : 50,
+      smallSpec: st ? Math.round(sl/st*100) : 50,
+      levNet: ll-ls, assetNet: al-as_,
+    };
+  }catch(e){ console.warn('COT:',e); return null; }
+}
+
+// ─── LOAD DATA ────────────────────────────────────────────────────────────────
+async function loadData(){
+  const key = localStorage.getItem('fred_key');
+  if(!key) return;
+  const btn = document.getElementById('refresh-btn');
+  btn.textContent='...'; btn.disabled=true;
+  hideErr();
+  try{
+    const [fred, cot] = await Promise.all([fetchFRED(key), fetchCOT()]);
+    state.fred = fred;
+    state.cot = cot;
+    state.ci = cot?.levFunds ?? null;
+    if(fred && state.ci!==null){
+      state.comp = calcScore(fred.vix, fred.ys, fred.dxy, fred.hy, state.ci);
+      state.ms = calcMS(fred.vix, fred.ys, fred.dxy, fred.hy, state.ci);
+      state.regime = regimeDetect(fred.vix, fred.ys, fred.dxy, fred.hy);
+    }
+    document.getElementById('ts').textContent = new Date().toLocaleTimeString('cs-CZ',{hour:'2-digit',minute:'2-digit'});
+    render();
+  }catch(e){
+    showErr('⚠ ' + e.message + ' — Zkontroluj FRED API klíč');
+  }
+  btn.textContent='↺'; btn.disabled=false;
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function render(){
+  renderBiasCard();
+  renderCOTCard();
+  renderRegimeCard();
+  renderConfluence();
+  renderConstellation();
+  renderCOTBars();
+  renderRightCol();
+  renderComposite();
+  renderChecklist();
+  renderGEX();
+  renderStatus();
+}
+
+function setCircle(id, val, color, size=26){
+  const el = document.getElementById(id);
+  el.style.borderColor = color;
+  el.style.boxShadow = `0 0 20px ${color}33`;
+  const v = el.querySelector('.circle-val');
+  v.textContent = val ?? '--';
+  v.style.color = color;
+  v.style.fontSize = size+'px';
+}
+
+function renderBiasCard(){
+  const { comp } = state;
+  const color = biasColor(comp??50);
+  setCircle('circ-bias', comp, color);
+  document.getElementById('bias-val').style.color = color;
+  document.getElementById('bias-label').textContent = comp!==null ? biasLabel(comp) : '--';
+  document.getElementById('bias-label').style.color = color;
+  const ms = state.ms;
+  document.getElementById('bias-sub').textContent = ms ? `${((ms.yc+ms.vix+ms.dxy+ms.hy)/4*100).toFixed(1)}% NET CONSENSUS` : '—';
+}
+
+function renderCOTCard(){
+  const ci = state.ci;
+  const color = ci!==null ? (ci>60?'#ffcc00':ci>40?'#4d9fff':'#ff3366') : '#3a5070';
+  setCircle('circ-cot', ci, color);
+  document.getElementById('cot-label').style.color = color;
+  document.getElementById('cot-label').textContent = ci!==null ? (ci>65?'MODERATELY LONG':ci>50?'SLIGHT LONG':ci>35?'NEUTRAL':'SLIGHT SHORT') : '--';
+  document.getElementById('cot-sub').textContent = state.cot?.date ? `As of ${state.cot.date}` : 'No COT data';
+}
+
+function renderRegimeCard(){
+  const ri = state.regime ? REGIMES[state.regime] : null;
+  const box = document.getElementById('regime-box');
+  box.style.background = ri ? ri.color+'12' : '#0a1020';
+  box.style.border = `1px solid ${ri?.color??'#1a2540'}`;
+  document.getElementById('regime-name').textContent = ri?.label ?? '--';
+  document.getElementById('regime-name').style.color = ri?.color ?? '#3a5070';
+  const f = state.fred;
+  document.getElementById('regime-vals').textContent = f ? `VIX ${f.vix?.toFixed(1)}  DXY ${f.dxy?.toFixed(1)}  10Y-2Y ${f.ys?.toFixed(2)}%` : '--';
+  document.getElementById('regime-desc').textContent = ri?.desc ?? '';
+}
+
+function renderConfluence(){
+  const checks = buildChecks();
+  const ok = checks.filter(c=>c.ok).length;
+  const total = checks.length || 4;
+  const color = ok>=4?'#00ff88':ok>=3?'#ffcc00':'#ff3366';
+  setCircle('circ-conf', ok, color, 20);
+  document.getElementById('conf-denom').textContent = `/ ${total}`;
+  const label = ok>=4?'HIGH CONFLUENCE':ok>=3?'MODERATE':'LOW CONFLUENCE';
+  document.getElementById('conf-label').textContent = label;
+  document.getElementById('conf-label').style.color = color;
+}
+
+function buildChecks(){
+  const { fred, comp, ci } = state;
+  if(!fred || comp===null) return [];
+  return [
+    { label:'Macro Score aligned', ok: comp>55||comp<45, note:`Score ${comp}/100 — bias confirmed` },
+    { label:'COT not at extreme — no fade', ok: ci!==null&&ci<80&&ci>20, note:`Lev Funds index ${ci}/100` },
+    { label:'VIX regime acceptable', ok: fred.vix<25, note:`VIX ${fred.vix?.toFixed(1)} — not crisis mode` },
+    { label:'Yield curve not inverted', ok: fred.ys>-0.3, note:`10Y-2Y spread ${fred.ys?.toFixed(2)}%` },
+  ];
+}
+
+function renderConstellation(){
+  const { fred, comp, ci, ms } = state;
+  if(!fred || comp===null){ return; }
+
+  const signals = [
+    { label:'Yield Curve', x: fred.ys>0?65:35, y: fred.ys>.3?68:fred.ys>0?55:32, bull: fred.ys>0 },
+    { label:'VIX Regime',  x: fred.vix<18?72:fred.vix<22?52:28, y: fred.vix<18?70:fred.vix<22?52:28, bull: fred.vix<22 },
+    { label:'HY Spread',   x: fred.hy<3.5?66:fred.hy<4.5?50:34, y: fred.hy<3.5?68:fred.hy<4.5?50:30, bull: fred.hy<4 },
+    { label:'COT Signal',  x: ci??50, y: ci>60?70:ci<40?28:50, bull: ci>52 },
+    { label:'DXY',         x: fred.dxy<101?68:fred.dxy<104?50:34, y: fred.dxy<100?72:fred.dxy<103?52:30, bull: fred.dxy<104 },
+  ];
+  document.getElementById('sig-count').textContent = signals.length + ' active signals';
+
+  const canvas = document.getElementById('scatter-chart');
+  if(scatterChart){ scatterChart.destroy(); scatterChart=null; }
+
+  scatterChart = new Chart(canvas, {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        data: signals.map(s=>({x:s.x, y:s.y, label:s.label, bull:s.bull})),
+        backgroundColor: signals.map(s=>s.bull?'#00ff8888':'#ff336688'),
+        borderColor: signals.map(s=>s.bull?'#00ff88':'#ff3366'),
+        borderWidth: 1,
+        pointRadius: 8,
+        pointHoverRadius: 10,
+      }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            label: ctx => {
+              const d = ctx.raw;
+              return ` ${d.label}  Bias:${d.y}  Conf:${d.x}`;
+            }
+          },
+          backgroundColor:'#07091a', borderColor:'#1a2540', borderWidth:1,
+          titleColor:'#c8d4e8', bodyColor:'#7a8fa8',
+          titleFont:{family:'IBM Plex Mono',size:10},
+          bodyFont:{family:'IBM Plex Mono',size:9},
+        }
+      },
+      scales:{
+        x:{min:0,max:100, title:{display:true,text:'CONFIDENCE →',color:'#2a3a55',font:{family:'IBM Plex Mono',size:8}}, grid:{color:'#0d1528'}, ticks:{color:'#3a5070',font:{family:'IBM Plex Mono',size:9}}},
+        y:{min:0,max:100, grid:{color:'#0d1528'}, ticks:{color:'#3a5070',font:{family:'IBM Plex Mono',size:9}}},
+      },
+      animation:{duration:800}
+    }
+  });
+}
+
+function renderCOTBars(){
+  const { cot, ci } = state;
+  const el = document.getElementById('cot-bars');
+  if(!cot){ el.innerHTML='<div class="loading">COT DATA NEDOSTUPNÁ</div>'; return; }
+
+  const cotSig = ci>70?'BULL SIGNAL':ci>30?'NEUTRAL':'FADE SIGNAL';
+  const cotSigColor = ci>70?'#00ff88':ci>30?'#ffcc00':'#ff3366';
+
+  function bar(label, pct, net){
+    const c = pct>60?'#00ff88':pct>40?'#ffcc00':'#ff3366';
+    const sig = pct>65?'BULL SIGNAL':pct>35?'NEUTRAL':'FADE SIGNAL';
+    return `<div class="cot-row">
+      <div class="cot-meta">
+        <span style="color:var(--muted);font-size:10px;">${label}</span>
+        <div class="cot-right">
+          <span style="color:#4a6080;font-size:9px;">${net>0?'+':''}${net?.toLocaleString()}</span>
+          <span style="color:#4a6080;font-size:9px;">${pct}</span>
+          <span class="cot-sig" style="color:${c};">${sig}</span>
+        </div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${c};box-shadow:0 0 6px ${c}66;"></div></div>
+    </div>`;
+  }
+
+  el.innerHTML = `
+    <div style="color:#2a3a55;font-size:9px;margin-bottom:12px;">Net Positioning · COT Index 0-100 · As of ${cot.date}</div>
+    ${bar('Lev. Funds', cot.levFunds, cot.levNet)}
+    ${bar('Asset Mgrs', cot.assetMgr, cot.assetNet)}
+    ${bar('Small Spec', cot.smallSpec, 0)}
+    <div style="margin-top:12px;padding:8px 10px;background:var(--bg3);border-radius:3px;">
+      <div style="font-size:9px;color:var(--dim);margin-bottom:4px;">INDEX STATUS</div>
+      <span style="color:${cotSigColor};font-size:10px;font-weight:700;">Index ${ci} · ${cotSig}</span>
+    </div>`;
+}
+
+function renderRightCol(){
+  renderRegimeChips();
+  renderSessionBias();
+  renderRegimeParams();
+}
+
+function renderRegimeChips(){
+  const chips = { goldilocks:'chip-gold', reflation:'chip-refl', stagflation:'chip-stag', deflation:'chip-defl' };
+  Object.entries(chips).forEach(([k,id])=>{
+    const el = document.getElementById(id);
+    const ri = REGIMES[k];
+    const active = state.regime===k;
+    el.style.background = active ? ri.color+'20' : '#0a1020';
+    el.style.borderColor = active ? ri.color : '#131d35';
+    el.style.color = active ? ri.color : '#2a3a55';
+  });
+  const ri = state.regime ? REGIMES[state.regime] : null;
+  document.getElementById('regime-desc2').textContent = ri?.desc ?? '--';
+}
+
+function renderSessionBias(){
+  const { comp } = state;
+  const el = document.getElementById('session-bias');
+  if(comp===null){ el.innerHTML='<div class="loading">--</div>'; return; }
+  const sessions = [['ASIA', Math.max(20,Math.min(80,comp-8))],['LONDON', Math.max(20,Math.min(80,comp-3))],['NEW YORK', comp]];
+  el.innerHTML = sessions.map(([l,s])=>`
+    <div class="sess-row">
+      <span style="color:#5a7090;font-size:10px;letter-spacing:1px;">${l}</span>
+      <span style="color:${biasColor(s)};font-size:10px;font-weight:700;letter-spacing:2px;">${biasLabel(s)}</span>
+    </div>`).join('');
+}
+
+function renderRegimeParams(){
+  const r = state.regime;
+  if(!r){ document.getElementById('regime-params').innerHTML=''; return; }
+  const params = {
+    goldilocks:  {risk:'1.5x',strat:'MEAN REVERSION',drop:'1.0x',lev:'2.0x'},
+    reflation:   {risk:'1.2x',strat:'MEAN REVERSION',drop:'1.0x',lev:'1.5x'},
+    stagflation: {risk:'0.8x',strat:'TREND FOLLOW',  drop:'1.0x',lev:'1.0x'},
+    deflation:   {risk:'0.5x',strat:'TREND FOLLOW',  drop:'1.5x',lev:'1.0x'},
+  }[r];
+  const color = REGIMES[r].color;
+  const rows = [['Risk Multiplier',params.risk],['Strategy Mode',params.strat],['Drop Multiplier',params.drop],['Max Leverage',params.lev]];
+  document.getElementById('regime-params').innerHTML = rows.map(([k,v])=>`
+    <div class="trow"><span class="trow-k">${k}</span><span class="trow-v" style="color:${color};">${v}</span></div>`).join('');
+}
+
+function renderComposite(){
+  const { fred, comp, ms, ci } = state;
+  const el = document.getElementById('composite-score');
+  if(!fred||!ms){ el.innerHTML='<div class="loading">--</div>'; return; }
+
+  const raw = ((comp-50)/50).toFixed(2);
+  const mainColor = comp>55?'#00ff88':comp>45?'#ffcc00':'#ff3366';
+  const compLabel = comp>60?'BULLISH':comp>50?'MILD BULL':comp>40?'NEUTRAL':'BEARISH';
+
+  function mbar(label, val, score, weight){
+    const bp = ((score+1)/2)*100;
+    const bc = score>0.3?'#00ff88':score>-0.3?'#ffcc00':'#ff3366';
+    return `<div class="bar-row">
+      <div class="bar-meta">
+        <span class="bar-label">${label} <span style="color:var(--dim);">${weight}%</span></span>
+        <div class="bar-vals">
+          <span class="bar-val">${val??'--'}</span>
+          <span class="bar-score" style="color:${bc};">${score!==null?(score>0?'+':'')+score.toFixed(2):'--'}</span>
+        </div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${bp}%;background:${bc};box-shadow:0 0 6px ${bc}66;"></div></div>
+    </div>`;
+  }
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px;">
+      <div style="font-size:36px;font-weight:700;color:${mainColor};line-height:1;">${comp>50?'+':''}${raw}</div>
+      <div>
+        <div style="color:${mainColor};font-size:11px;font-weight:700;letter-spacing:2px;">${compLabel}</div>
+        <div style="color:var(--dim);font-size:9px;">-1 to +1</div>
+      </div>
+    </div>
+    ${mbar('Yield Curve', fred.ys?.toFixed(2)+'%', ms.yc, 20)}
+    ${mbar('VIX', fred.vix?.toFixed(1), ms.vix, 20)}
+    ${mbar('DXY', fred.dxy?.toFixed(1), ms.dxy, 15)}
+    ${mbar('HY Spread', fred.hy?.toFixed(2)+'%', ms.hy, 15)}
+    ${mbar('COT Signal', ci, ms.cot, 30)}`;
+}
+
+function renderChecklist(){
+  const checks = buildChecks();
+  const el = document.getElementById('checklist');
+  if(!checks.length){ el.innerHTML='<div class="loading">ČEKÁM NA DATA</div>'; return; }
+
+  const ok = checks.filter(c=>c.ok).length;
+  const confColor = ok>=4?'#00ff88':ok>=3?'#ffcc00':'#ff3366';
+  const { comp } = state;
+
+  const reco = comp>60&&ok>=3 ? '→ FAVOR LONGS — buy pullbacks on pullbacks'
+    : comp<40&&ok>=3 ? '→ FAVOR SHORTS — sell bounces'
+    : '→ WAIT FOR CLEARER SETUP — mixed signals';
+
+  el.innerHTML = checks.map(c=>`
+    <div class="check-item">
+      <div class="check-box" style="border-color:${c.ok?'#00ff88':'#ff3366'};background:${c.ok?'#00ff8822':'#ff336622'};color:${c.ok?'#00ff88':'#ff3366'};">${c.ok?'✓':'✗'}</div>
+      <div>
+        <div class="check-text" style="color:${c.ok?'var(--text)':'#4a6080'};">${c.label}</div>
+        <div class="check-note">${c.note}</div>
+      </div>
+    </div>`).join('') + `
+    <div class="reco" style="border:1px solid ${confColor}33;">
+      <div class="reco-label">TRADE RECOMMENDATION & GEX CONTEXT</div>
+      <div class="reco-text" style="color:${confColor};">${reco}</div>
+    </div>`;
+}
+
+function renderGEX(){
+  const fields = [
+    { k:'cw', label:'Call Wall', color:'#00ff88' },
+    { k:'pw', label:'Put Wall',  color:'#ff3366' },
+    { k:'mp', label:'Max Pain',  color:'#ffcc00' },
+    { k:'gf', label:'GEX Flip Zone', color:'#4d9fff' },
+  ];
+  document.getElementById('gex-fields').innerHTML = fields.map(f=>`
+    <div style="margin-bottom:8px;">
+      <div style="font-size:9px;color:#5a7090;margin-bottom:3px;display:flex;justify-content:space-between;">
+        <span>${f.label}</span>
+        ${gexVals[f.k] ? `<span style="color:${f.color};">${parseFloat(gexVals[f.k]).toLocaleString()}</span>` : ''}
+      </div>
+      <input class="gex-inp" type="number" placeholder="NQ pts..." value="${gexVals[f.k]}"
+        style="border-color:${gexVals[f.k]?f.color+'66':'var(--border)'};"
+        onchange="setGex('${f.k}',this.value)" onblur="setGex('${f.k}',this.value)" />
+    </div>`).join('');
+
+  const ctx = document.getElementById('gex-context');
+  if(gexVals.cw && gexVals.pw){
+    const pos = parseFloat(gexVals.cw) > parseFloat(gexVals.pw);
+    ctx.innerHTML = `<div class="gex-context">
+      <div style="font-size:9px;color:var(--dim);margin-bottom:4px;">GEX CONTEXT</div>
+      <div style="color:${pos?'#00ff88':'#ff6600'};font-size:9px;">
+        ${pos ? '+ Positive GEX → Pinned, low vol, mean reversion mode' : '− Negative GEX → Explosive, high vol, trend mode'}
+      </div>
+    </div>`;
+  } else { ctx.innerHTML=''; }
+}
+
+function setGex(k, v){
+  gexVals[k] = v;
+  renderGEX();
+}
+
+function renderStatus(){
+  const { fred, cot } = state;
+  const ts = document.getElementById('ts').textContent;
+  const rows = [
+    ['FRED', fred ? `✓ ${ts}` : '✗ —', !!fred],
+    ['COT ID', cot ? `✓ ${cot.date}` : '✗ —', !!cot],
+    ['GEX', gexVals.cw ? '✓ Manual' : '— Not set', !!gexVals.cw],
+  ];
+  document.getElementById('data-status').innerHTML = rows.map(([k,v,ok])=>`
+    <div class="trow">
+      <span class="trow-k">${k}</span>
+      <span class="trow-v" style="color:${ok?'#00ff88':'#3a5070'};">${v}</span>
+    </div>`).join('');
+}
+
+// ─── AUTH ─────────────────────────────────────────────────────────────────────
+function saveKey(){
+  const k = document.getElementById('key-input').value.trim();
+  if(!k) return;
+  localStorage.setItem('fred_key', k);
+  showApp();
+  loadData();
+}
+
+function resetKey(){
+  localStorage.removeItem('fred_key');
+  location.reload();
+}
+
+function showApp(){
+  document.getElementById('setup').style.display='none';
+  document.getElementById('header').style.display='flex';
+  document.getElementById('app').style.display='block';
+  document.getElementById('footer').style.display='block';
+}
+
+function showErr(msg){
+  const el = document.getElementById('errbar');
+  el.textContent=msg; el.style.display='block';
+}
+function hideErr(){ document.getElementById('errbar').style.display='none'; }
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+document.getElementById('key-input').addEventListener('keydown', e => e.key==='Enter' && saveKey());
+
+if(localStorage.getItem('fred_key')){
+  showApp();
+  loadData();
+  refreshTimer = setInterval(loadData, 5*60*1000);
+}
+</script>
+</body>
+</html>
